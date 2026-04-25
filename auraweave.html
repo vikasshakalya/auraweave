@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AuraWeave Pro — Shakalya International</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            /* Light Theme Variables inspired by the logo */
+            --void: #ffffff; 
+            --cyan: #4facfe;
+            --violet: #a18cd1;
+            --rose: #fbc2eb;
+            --gold: #f6d365;
+            --lime: #84cc16;
+            --glass: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.04);
+            --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+            --glow-cyan: 0 0 20px rgba(79, 172, 254, 0.3), 0 0 40px rgba(79, 172, 254, 0.1);
+            --glow-violet: 0 0 20px rgba(161, 140, 209, 0.3), 0 0 40px rgba(161, 140, 209, 0.1);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--void);
+            font-family: 'Rajdhani', sans-serif;
+            color: #1e293b; /* slate-800 */
+            overflow: hidden;
+            touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Light, airy background mesh */
+        body::before {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: panGrid 60s linear infinite;
+        }
+
+        /* Soft pastel radial gradients matching logo ribbon colors */
+        body::after {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: 
+                radial-gradient(circle at 20% 0%, rgba(251, 194, 235, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 100%, rgba(79, 172, 254, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(161, 140, 209, 0.1) 0%, transparent 60%);
+        }
+
+        @keyframes panGrid {
+            0% { background-position: 0 0; }
+            100% { background-position: 400px 400px; }
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-space { font-family: 'Space Mono', monospace; }
+
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; height: 4px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: rgba(0,0,0,0.1); border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px; width: 16px; border-radius: 50%;
+            background: var(--violet); cursor: pointer;
+            -webkit-appearance: none; margin-top: -6px;
+            box-shadow: 0 0 10px rgba(177, 75, 244, 0.5);
+            border: 2px solid #fff;
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            box-shadow: var(--glass-shadow);
+        }
+
+        #master-canvas, #hud-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        #master-canvas { z-index: 1; touch-action: none; }
+        #hud-canvas { z-index: 2; pointer-events: none; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.02); }
+        }
+        .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+        }
+        .toast-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .panel-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- CANVAS LAYERS -->
+    <canvas id="master-canvas"></canvas>
+    <canvas id="hud-canvas"></canvas>
+
+    <!-- FLOATING TOP BAR -->
+    <header class="absolute top-4 left-4 right-4 md:top-6 md:left-6 md:right-6 z-40 flex justify-between items-start pointer-events-none">
+        
+        <!-- Branding (Native Recreated Logo) -->
+        <div class="glass-panel p-2 md:p-3 flex items-center gap-3 md:gap-4 pointer-events-auto transition-transform hover:scale-[1.02] shadow-sm hover:shadow-md bg-white/90">
+            <!-- Native SVG Icon -->
+            <div class="w-10 h-10 md:w-12 md:h-12 shrink-0 relative">
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-md" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="svgGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ff7eb3"/>
+                            <stop offset="50%" stop-color="#b14bf4"/>
+                            <stop offset="100%" stop-color="#00d2ff"/>
+                        </linearGradient>
+                        <linearGradient id="svgGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#00d2ff"/>
+                            <stop offset="50%" stop-color="#b14bf4"/>
+                            <stop offset="100%" stop-color="#ff7eb3"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M 100,20 C 180,20 180,180 100,180 C 20,180 20,20 100,20" fill="none" stroke="url(#svgGrad1)" stroke-width="2" transform="rotate(15 100 100)"/>
+                    <path d="M 100,25 C 170,25 170,175 100,175 C 30,175 30,25 100,25" fill="none" stroke="url(#svgGrad2)" stroke-width="1" transform="rotate(45 100 100)"/>
+                    <path d="M 100,30 C 160,30 160,170 100,170 C 40,170 40,30 100,30" fill="none" stroke="url(#svgGrad1)" stroke-width="2.5" transform="rotate(75 100 100)"/>
+                    <path d="M 100,35 C 150,35 150,165 100,165 C 50,165 50,35 100,35" fill="none" stroke="url(#svgGrad2)" stroke-width="1" transform="rotate(105 100 100)"/>
+                    <path d="M 40,120 Q 100,160 140,90 T 100,60" fill="none" stroke="url(#svgGrad2)" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="140" cy="90" r="4" fill="#ffffff" />
+                    <circle cx="140" cy="90" r="8" fill="none" stroke="#00d2ff" stroke-width="1.5" />
+                </svg>
+            </div>
+            <div class="pr-2 hidden sm:block">
+                <h1 class="font-orbitron font-medium text-xl md:text-2xl tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-[#ff7eb3] via-[#b14bf4] to-[#00d2ff] leading-none lowercase">auraweave</h1>
+            </div>
+        </div>
+
+        <!-- Mobile Toggles -->
+        <div class="flex md:hidden gap-2 pointer-events-auto">
+            <button onclick="togglePanel('left')" class="glass-panel p-3 text-slate-500 hover:text-violet-600 hover:bg-slate-50 active:scale-95 transition-all">
+                <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+            </button>
+            <button onclick="togglePanel('right')" class="glass-panel p-3 text-slate-500 hover:text-cyan-600 hover:bg-slate-50 active:scale-95 transition-all">
+                <i data-lucide="palette" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Desktop Action Buttons -->
+        <div class="hidden md:flex gap-3 pointer-events-auto">
+            <button onclick="clearCanvas()" class="glass-panel px-4 py-3 flex items-center gap-2 hover:bg-slate-50 transition-colors group">
+                <i data-lucide="trash-2" class="w-4 h-4 text-slate-400 group-hover:text-rose-500 transition-colors"></i>
+                <span class="text-xs font-bold tracking-wider uppercase text-slate-600 group-hover:text-rose-500 transition-colors">Clear</span>
+            </button>
+            <button onclick="exportArtwork()" class="glass-panel px-4 py-3 flex items-center gap-2 hover:bg-slate-50 transition-colors border-cyan-200 group shadow-sm hover:shadow-[var(--glow-cyan)]">
+                <i data-lucide="download" class="w-4 h-4 text-[#00d2ff]"></i>
+                <span class="text-xs font-bold tracking-wider uppercase text-slate-700">Export</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MOBILE ACTION BAR (Bottom) -->
+    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex md:hidden gap-3 z-30 pointer-events-none w-[90%] max-w-sm">
+        <button onclick="clearCanvas()" class="glass-panel flex-1 py-3 pointer-events-auto flex justify-center items-center gap-2 hover:bg-slate-50 active:scale-95 transition-all">
+            <i data-lucide="trash-2" class="w-4 h-4 text-slate-500"></i>
+        </button>
+        <button onclick="exportArtwork()" class="glass-panel flex-1 py-3 pointer-events-auto flex justify-center items-center gap-2 bg-[#00d2ff]/10 border-[#00d2ff]/30 active:scale-95 transition-all">
+            <i data-lucide="download" class="w-4 h-4 text-[#00d2ff]"></i>
+        </button>
+    </div>
+
+    <!-- FLOATING CAMERA PIP -->
+    <div id="camera-pip" class="fixed bottom-20 md:bottom-6 right-4 md:left-6 md:right-auto w-24 h-32 md:w-32 md:h-40 glass-panel p-1 pointer-events-auto z-40 overflow-hidden shadow-xl transition-all duration-300">
+        <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover rounded-xl transform -scale-x-100 opacity-90"></video>
+        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%]">
+            <div id="gesture-pill" class="bg-white/90 backdrop-blur border border-slate-200 px-1.5 md:px-2 py-1 rounded-md font-space text-[8px] md:text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse shrink-0"></span>
+                <span id="gesture-text" class="truncate">Waking...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEFT PANEL (Settings) -->
+    <aside id="panel-left" class="panel-transition absolute -left-full md:left-6 top-24 bottom-36 md:top-32 md:bottom-32 w-[85%] md:w-72 z-50 flex flex-col pointer-events-none">
+        
+        <div class="glass-panel p-5 flex-1 overflow-y-auto pointer-events-auto flex flex-col gap-6 h-full relative">
+            <button onclick="togglePanel('left')" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+
+            <!-- Active Tool Menu -->
+            <div class="space-y-3 mt-2 md:mt-0">
+                <div class="flex items-center gap-2 font-orbitron text-xs tracking-widest text-slate-500 uppercase border-b border-slate-200 pb-2">
+                    <i data-lucide="pen-tool" class="w-4 h-4"></i> Active Tool
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setTool('DRAW', this)" class="tool-btn active bg-[#b14bf4]/10 border-[#b14bf4]/40 text-[#b14bf4] py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border shadow-sm">Draw</button>
+                    <button onclick="setTool('LINE', this)" class="tool-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Line</button>
+                    <button onclick="setTool('RECT', this)" class="tool-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Rect</button>
+                    <button onclick="setTool('CIRCLE', this)" class="tool-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Circle</button>
+                    <button onclick="setTool('SPRAY', this)" class="tool-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Spray</button>
+                    <button onclick="setTool('STAMP', this)" class="tool-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Stamp</button>
+                </div>
+            </div>
+
+            <!-- Brush Settings -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 font-orbitron text-xs tracking-widest text-slate-500 uppercase border-b border-slate-200 pb-2">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Engine Params
+                </div>
+                
+                <div class="space-y-1">
+                    <div class="flex justify-between font-space text-[10px] text-slate-500 uppercase"><label>Stroke Weight</label><span id="val-size" class="text-[#b14bf4] font-bold">12</span></div>
+                    <input type="range" id="param-size" min="2" max="80" value="12" oninput="updateParam('size', this.value)">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between font-space text-[10px] text-slate-500 uppercase"><label>Symmetry</label><span id="val-sym" class="text-[#b14bf4] font-bold">1x</span></div>
+                    <input type="range" id="param-sym" min="1" max="16" value="1" oninput="updateParam('sym', this.value)">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between font-space text-[10px] text-slate-500 uppercase"><label>Bleed / Softness</label><span id="val-glow" class="text-[#b14bf4] font-bold">0.5</span></div>
+                    <input type="range" id="param-glow" min="0" max="2" step="0.1" value="0.5" oninput="updateParam('glow', this.value)">
+                </div>
+            </div>
+
+            <!-- Blend Modes (Tailored for Light Theme) -->
+            <div class="space-y-3">
+                <div class="font-orbitron text-xs tracking-widest text-slate-500 uppercase border-b border-slate-200 pb-2">Compositing</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setBlend('multiply', this)" class="blend-btn active bg-[#b14bf4]/10 border-[#b14bf4]/40 text-[#b14bf4] py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border shadow-sm">Ink (Multiply)</button>
+                    <button onclick="setBlend('source-over', this)" class="blend-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Flat (Normal)</button>
+                    <button onclick="setBlend('darken', this)" class="blend-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Darken</button>
+                    <button onclick="setBlend('color-burn', this)" class="blend-btn bg-slate-50 border-slate-200 text-slate-500 py-2 rounded-lg text-[10px] font-space font-bold uppercase tracking-wider transition-all border hover:bg-slate-100">Deep Burn</button>
+                </div>
+            </div>
+
+            <!-- Gesture Guide -->
+            <div class="space-y-3 flex-1">
+                <div class="font-orbitron text-xs tracking-widest text-slate-500 uppercase border-b border-slate-200 pb-2">Neural Gestures</div>
+                <div id="gesture-list" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- RIGHT PANEL (AI & Palette) -->
+    <aside id="panel-right" class="panel-transition absolute -right-full md:right-6 top-24 bottom-36 md:top-32 md:bottom-32 w-[85%] md:w-80 z-50 flex flex-col gap-4 pointer-events-none">
+        
+        <!-- Palette Studio -->
+        <div class="glass-panel p-5 pointer-events-auto flex flex-col gap-4 relative">
+            <button onclick="togglePanel('right')" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2 mt-2 md:mt-0">
+                <div class="flex items-center gap-2 font-orbitron text-xs tracking-widest text-slate-500 uppercase">
+                    <i data-lucide="palette" class="w-4 h-4"></i> Color Studio
+                </div>
+                <button onclick="generateAIPalette()" id="btn-palette" class="text-[10px] font-space text-[#b14bf4] hover:text-[#ff7eb3] font-bold uppercase flex items-center gap-1 transition-colors pl-4">
+                    <i data-lucide="sparkles" class="w-3 h-3"></i> Generate
+                </button>
+            </div>
+            
+            <div class="text-center font-space text-[10px] md:text-xs text-slate-700 font-bold tracking-widest truncate" id="palette-theme">
+                ETHEREAL RIBBON
+            </div>
+
+            <div class="grid grid-cols-4 gap-2 md:gap-3" id="palette-grid">
+                <!-- Colors injected here -->
+            </div>
+        </div>
+
+        <!-- AI Critic -->
+        <div class="glass-panel p-5 flex-1 pointer-events-auto flex flex-col min-h-[200px]">
+            <div class="flex items-center gap-2 font-orbitron text-xs tracking-widest text-slate-500 uppercase border-b border-slate-200 pb-2 mb-4">
+                <i data-lucide="bot" class="w-4 h-4"></i> AI Art Critic
+            </div>
+            
+            <div id="critic-output" class="flex-1 bg-slate-50/80 rounded-xl border border-slate-200 p-4 overflow-y-auto font-serif text-sm text-slate-600 leading-relaxed italic flex flex-col items-center justify-center text-center relative shadow-inner">
+                <span class="text-slate-400 not-italic font-space text-xs">Awaiting your masterpiece...</span>
+            </div>
+
+            <button onclick="analyzeArtwork()" id="btn-critic" class="mt-4 w-full py-3 bg-[#b14bf4]/10 hover:bg-[#b14bf4]/20 border border-[#b14bf4]/30 rounded-xl text-[#b14bf4] font-bold font-space text-[10px] uppercase tracking-widest transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95">
+                <i data-lucide="scan-eye" class="w-4 h-4"></i> Analyze Canvas
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- CENTER HUD MESSAGES -->
+    <div id="center-hud" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none text-center transition-opacity duration-500 w-full px-4">
+        <i data-lucide="hand" class="w-12 h-12 md:w-16 md:h-16 text-slate-200 mx-auto mb-4 animate-pulse"></i>
+        <div class="font-space text-xs md:text-sm tracking-[0.2em] md:tracking-[0.4em] text-slate-300 uppercase">Awaiting Camera or Touch Input</div>
+    </div>
+
+    <!-- INITIAL LOADING SCREEN -->
+    <div id="loading-screen" class="absolute inset-0 z-50 bg-[#ffffff] flex flex-col items-center justify-center transition-opacity duration-700">
+        
+        <!-- Recreated Native Logo Lockup -->
+        <div class="flex flex-col items-center justify-center animate-pulse-glow mb-6 mt-[-40px]">
+            <div class="w-48 h-48 md:w-64 md:h-64">
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="mainGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ff7eb3"/>
+                            <stop offset="50%" stop-color="#b14bf4"/>
+                            <stop offset="100%" stop-color="#00d2ff"/>
+                        </linearGradient>
+                        <linearGradient id="mainGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#00d2ff"/>
+                            <stop offset="50%" stop-color="#b14bf4"/>
+                            <stop offset="100%" stop-color="#ff7eb3"/>
+                        </linearGradient>
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+                    <g filter="url(#glow)">
+                        <path d="M 100,20 C 180,20 180,180 100,180 C 20,180 20,20 100,20" fill="none" stroke="url(#mainGrad1)" stroke-width="1.5" transform="rotate(15 100 100)"/>
+                        <path d="M 100,25 C 170,25 170,175 100,175 C 30,175 30,25 100,25" fill="none" stroke="url(#mainGrad2)" stroke-width="0.75" transform="rotate(45 100 100)"/>
+                        <path d="M 100,30 C 160,30 160,170 100,170 C 40,170 40,30 100,30" fill="none" stroke="url(#mainGrad1)" stroke-width="2" transform="rotate(75 100 100)"/>
+                        <path d="M 100,35 C 150,35 150,165 100,165 C 50,165 50,35 100,35" fill="none" stroke="url(#mainGrad2)" stroke-width="0.5" transform="rotate(105 100 100)"/>
+                        <path d="M 100,40 C 140,40 140,160 100,160 C 60,160 60,40 100,40" fill="none" stroke="url(#mainGrad1)" stroke-width="1.5" transform="rotate(135 100 100)"/>
+                        <path d="M 40,120 Q 100,160 140,90 T 100,60" fill="none" stroke="url(#mainGrad2)" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="140" cy="90" r="3" fill="#ffffff" />
+                        <circle cx="140" cy="90" r="7" fill="none" stroke="#00d2ff" stroke-width="1" />
+                    </g>
+                </svg>
+            </div>
+            <h1 class="font-orbitron font-light text-4xl md:text-5xl tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-[#ff7eb3] via-[#b14bf4] to-[#00d2ff] leading-none lowercase mt-2">auraweave</h1>
+            <div class="w-12 h-[2px] bg-gradient-to-r from-[#b14bf4] to-[#00d2ff] mt-4 mb-3 rounded-full opacity-60"></div>
+            <p class="font-space text-[8px] md:text-[10px] tracking-[0.3em] text-slate-500 uppercase text-center">Draw with gesture. Create with intention.</p>
+        </div>
+
+        <div class="w-48 md:w-64 h-1 bg-slate-100 rounded-full overflow-hidden shadow-inner mt-4">
+            <div id="load-bar" class="h-full bg-gradient-to-r from-[#fbc2eb] via-[#a18cd1] to-[#4facfe] w-0 transition-all duration-300"></div>
+        </div>
+        <p id="load-text" class="font-space text-[10px] md:text-xs text-slate-400 mt-4 tracking-widest uppercase">Initializing Neural Modules...</p>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="absolute bottom-24 md:bottom-10 left-1/2 z-50 pointer-events-none flex flex-col gap-2 w-max max-w-full px-4"></div>
+
+    <!-- SCRIPTS -->
+    <script>
+        lucide.createIcons();
+
+        // --- CORE STATE & DYNAMIC TRACKING OPTIMIZATION ---
+        const State = {
+            color: '#a18cd1', // Elegant violet default
+            blendMode: 'multiply', // Crucial for rich drawing on light mode
+            params: { size: 12, sym: 1, glow: 0.3 }, // Lower glow for watercolor bleed effect
+            activeGesture: 'IDLE',
+            activeTool: 'DRAW',
+            prevPos: null,
+            shapeStart: null,
+            wasPinching: false,
+            touchActive: false,
+            smoothedPos1: null,
+            smoothedPos2: null,
+            apiKey: "" 
+        };
+
+        const THEMES = [
+            { name: "ETHEREAL RIBBON", colors: ['#a18cd1', '#fbc2eb', '#4facfe', '#00f2fe', '#84fab0', '#ff0844', '#43e97b', '#38f9d7'] }
+        ];
+
+        const GESTURE_MAP = [
+            { id: 'IDLE', icon: 'pointer', name: 'Hover', desc: 'Index finger to explore' },
+            { id: 'DRAW', icon: 'pen-tool', name: 'Use Tool', desc: 'Pinch index & thumb' },
+            { id: 'ERASE', icon: 'eraser', name: 'Erase Area', desc: 'Open palm, fingers splayed' }
+        ];
+
+        // --- CANVAS SETUP ---
+        const canvasM = document.getElementById('master-canvas');
+        const ctxM = canvasM.getContext('2d', { alpha: true });
+        const canvasH = document.getElementById('hud-canvas');
+        const ctxH = canvasH.getContext('2d');
+
+        function resize() {
+            canvasM.width = canvasH.width = window.innerWidth;
+            canvasM.height = canvasH.height = window.innerHeight;
+            ctxM.lineCap = 'round'; ctxM.lineJoin = 'round';
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- UI TOGGLES (MOBILE) ---
+        window.togglePanel = (side) => {
+            const left = document.getElementById('panel-left');
+            const right = document.getElementById('panel-right');
+            
+            if (side === 'left') {
+                left.classList.toggle('-left-full'); left.classList.toggle('left-4');
+                right.classList.add('-right-full'); right.classList.remove('right-4');
+            } else {
+                right.classList.toggle('-right-full'); right.classList.toggle('right-4');
+                left.classList.add('-left-full'); left.classList.remove('left-4');
+            }
+        };
+
+        // --- UI UPDATERS ---
+        window.updateParam = (key, val) => {
+            State.params[key] = parseFloat(val);
+            document.getElementById(`val-${key}`).innerText = key === 'sym' ? val + 'x' : val;
+        }
+
+        window.setBlend = (mode, btnEl) => {
+            State.blendMode = mode;
+            document.querySelectorAll('.blend-btn').forEach(b => {
+                b.classList.remove('active', 'bg-[#b14bf4]/10', 'border-[#b14bf4]/40', 'text-[#b14bf4]', 'shadow-sm');
+                b.classList.add('bg-slate-50', 'border-slate-200', 'text-slate-500');
+            });
+            btnEl.classList.remove('bg-slate-50', 'border-slate-200', 'text-slate-500');
+            btnEl.classList.add('active', 'bg-[#b14bf4]/10', 'border-[#b14bf4]/40', 'text-[#b14bf4]', 'shadow-sm');
+        };
+
+        window.setTool = (tool, btnEl) => {
+            State.activeTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.remove('active', 'bg-[#b14bf4]/10', 'border-[#b14bf4]/40', 'text-[#b14bf4]', 'shadow-sm');
+                b.classList.add('bg-slate-50', 'border-slate-200', 'text-slate-500');
+            });
+            btnEl.classList.remove('bg-slate-50', 'border-slate-200', 'text-slate-500');
+            btnEl.classList.add('active', 'bg-[#b14bf4]/10', 'border-[#b14bf4]/40', 'text-[#b14bf4]', 'shadow-sm');
+            showToast(`Tool Selected: ${tool}`, 'pen-tool');
+        };
+
+        function buildPaletteUI(colors, themeName) {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+            document.getElementById('palette-theme').innerText = themeName;
+            
+            colors.forEach((c, i) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full aspect-square rounded-lg border-2 transition-all transform hover:scale-110 shadow-md ${i===0 ? 'border-slate-800 scale-110 z-10' : 'border-transparent'}`;
+                btn.style.backgroundColor = c;
+                btn.onclick = () => {
+                    State.color = c;
+                    Array.from(grid.children).forEach(child => child.classList.replace('border-slate-800', 'border-transparent'));
+                    btn.classList.replace('border-transparent', 'border-slate-800');
+                };
+                grid.appendChild(btn);
+            });
+            State.color = colors[0];
+        }
+        buildPaletteUI(THEMES[0].colors, THEMES[0].name);
+
+        function buildGestureGuide() {
+            const list = document.getElementById('gesture-list');
+            GESTURE_MAP.forEach(g => {
+                const el = document.createElement('div');
+                el.id = `guide-${g.id}`;
+                el.className = 'flex items-center gap-3 p-2 rounded-lg border border-transparent transition-all opacity-50';
+                el.innerHTML = `
+                    <div class="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                        <i data-lucide="${g.icon}" class="w-4 h-4 text-slate-500"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs text-slate-700">${g.name}</div>
+                        <div class="font-space text-[9px] text-slate-500 leading-tight">${g.desc}</div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+        buildGestureGuide();
+
+        function highlightGesture(id) {
+            document.querySelectorAll('#gesture-list > div').forEach(el => {
+                el.classList.remove('bg-[#b14bf4]/10', 'border-[#b14bf4]/30', 'opacity-100');
+                el.classList.add('opacity-50');
+            });
+            const target = document.getElementById(`guide-${id}`);
+            if(target) {
+                target.classList.remove('opacity-50');
+                target.classList.add('bg-[#b14bf4]/10', 'border-[#b14bf4]/30', 'opacity-100');
+                if(window.innerWidth > 768) target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            const pill = document.getElementById('gesture-pill');
+            const txt = document.getElementById('gesture-text');
+            txt.innerText = id;
+            if(id === 'IDLE' || id === 'NONE' || id === 'TOUCH_MODE') {
+                pill.className = 'bg-white/90 backdrop-blur border border-slate-200 px-1.5 md:px-2 py-1 rounded-md font-space text-[8px] md:text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5';
+                pill.querySelector('span').className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+            } else if (id === 'ERASE') {
+                pill.className = 'bg-white/90 backdrop-blur border border-rose-200 px-1.5 md:px-2 py-1 rounded-md font-space text-[8px] md:text-[10px] text-rose-500 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm';
+                pill.querySelector('span').className = 'w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0';
+            } else {
+                pill.className = 'bg-white/90 backdrop-blur border border-[#b14bf4]/30 px-1.5 md:px-2 py-1 rounded-md font-space text-[8px] md:text-[10px] text-[#b14bf4] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm';
+                pill.querySelector('span').className = 'w-1.5 h-1.5 rounded-full bg-[#b14bf4] animate-pulse shrink-0';
+            }
+        }
+
+        function showToast(msg, icon = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast-enter bg-white/90 backdrop-blur-md border border-slate-200 px-4 py-2 rounded-full font-space text-xs text-slate-800 flex items-center gap-2 shadow-xl -translate-x-1/2 w-max max-w-[90vw]';
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-3 h-3 text-[#b14bf4] shrink-0"></i> <span class="truncate">${msg}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        window.clearCanvas = () => {
+            ctxM.clearRect(0, 0, canvasM.width, canvasM.height);
+            document.getElementById('center-hud').style.opacity = '1';
+            showToast('Canvas Cleared', 'trash-2');
+        };
+
+        window.exportArtwork = () => {
+            const t = document.createElement('canvas');
+            t.width = canvasM.width; t.height = canvasM.height;
+            const tc = t.getContext('2d');
+            tc.fillStyle = '#ffffff'; // Light mode export background
+            tc.fillRect(0, 0, t.width, t.height);
+            tc.drawImage(canvasM, 0, 0);
+            const a = document.createElement('a');
+            a.href = t.toDataURL('image/png');
+            a.download = `AuraWeave-Studio-${Date.now()}.png`;
+            a.click();
+            showToast('Artwork Exported', 'download');
+        };
+
+        // --- MATH, FILTERING & DRAWING UTILS ---
+        const dist = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        const mapLandmark = (lm) => ({ x: (1 - lm.x) * canvasH.width, y: lm.y * canvasH.height });
+
+        function smoothPoint(rawPt, stateKey) {
+            if (!State[stateKey]) {
+                State[stateKey] = { ...rawPt };
+                return { ...State[stateKey] };
+            }
+            const dx = rawPt.x - State[stateKey].x;
+            const dy = rawPt.y - State[stateKey].y;
+            const d = Math.hypot(dx, dy);
+            
+            const alpha = Math.min(Math.max(d / 50, 0.3), 0.85);
+            
+            State[stateKey].x += dx * alpha;
+            State[stateKey].y += dy * alpha;
+            return { x: State[stateKey].x, y: State[stateKey].y };
+        }
+
+        function applySymmetry(ctx, fn) {
+            const sym = parseInt(State.params.sym);
+            if (sym === 1) {
+                fn();
+                return;
+            }
+            
+            const cx = canvasM.width / 2;
+            const cy = canvasM.height / 2;
+            
+            for (let i = 0; i < sym; i++) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((Math.PI * 2 / sym) * i);
+                ctx.translate(-cx, -cy);
+                fn();
+                ctx.restore();
+                
+                if (sym > 1) {
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate((Math.PI * 2 / sym) * i);
+                    ctx.scale(-1, 1);
+                    ctx.translate(-cx, -cy);
+                    fn();
+                    ctx.restore();
+                }
+            }
+        }
+
+        function renderBrush(p1, p2, state) {
+            const { size, glow } = State.params;
+            ctxM.globalCompositeOperation = State.blendMode;
+            ctxM.strokeStyle = State.color;
+            ctxM.shadowColor = State.color;
+            ctxM.lineCap = 'round';
+            ctxM.lineJoin = 'round';
+            
+            applySymmetry(ctxM, () => {
+                if (state === 'DRAW') {
+                    ctxM.lineWidth = size;
+                    // Lower glow multiplier for watercolor/ink effect in light mode
+                    ctxM.shadowBlur = size * glow;
+                    ctxM.beginPath();
+                    if(p1) ctxM.moveTo(p1.x, p1.y);
+                    else ctxM.moveTo(p2.x, p2.y);
+                    ctxM.lineTo(p2.x, p2.y);
+                    ctxM.stroke();
+                } else if (state === 'RECT' && p1) {
+                    ctxM.lineWidth = size * 0.5;
+                    ctxM.shadowBlur = size * glow;
+                    const w = p2.x - p1.x;
+                    const h = p2.y - p1.y;
+                    ctxM.strokeRect(p1.x, p1.y, w, h);
+                } else if (state === 'CIRCLE' && p1) {
+                    ctxM.lineWidth = size * 0.5;
+                    ctxM.shadowBlur = size * glow;
+                    const r = dist(p1, p2);
+                    ctxM.beginPath();
+                    ctxM.arc(p1.x, p1.y, r, 0, Math.PI * 2);
+                    ctxM.stroke();
+                } else if (state === 'ERASE') {
+                    ctxM.globalCompositeOperation = 'destination-out';
+                    ctxM.shadowBlur = 0;
+                    ctxM.fillStyle = 'rgba(0,0,0,1)';
+                    ctxM.beginPath();
+                    ctxM.arc(p2.x, p2.y, size * 4, 0, Math.PI * 2);
+                    ctxM.fill();
+                } else if (state === 'LINE' && p1) {
+                    ctxM.lineWidth = size * 0.8;
+                    ctxM.shadowBlur = size * glow * 1.5;
+                    ctxM.beginPath();
+                    ctxM.moveTo(p1.x, p1.y);
+                    ctxM.lineTo(p2.x, p2.y);
+                    ctxM.stroke();
+                } else if (state === 'SPRAY') {
+                    for(let i=0; i<10; i++) {
+                        const a = Math.random() * Math.PI * 2;
+                        const r = Math.random() * size * 3;
+                        const px = p2.x + Math.cos(a)*r;
+                        const py = p2.y + Math.sin(a)*r;
+                        ctxM.fillStyle = State.color;
+                        ctxM.shadowBlur = glow * 2;
+                        ctxM.beginPath();
+                        ctxM.arc(px, py, Math.random() * size * 0.2, 0, Math.PI*2);
+                        ctxM.fill();
+                    }
+                } else if (state === 'STAMP') {
+                    ctxM.lineWidth = size * 0.4;
+                    ctxM.shadowBlur = size * glow;
+                    for(let i=0; i<8; i++){
+                        const a = (Math.PI*2/8)*i;
+                        const r = size * 5;
+                        ctxM.beginPath();
+                        ctxM.moveTo(p2.x, p2.y);
+                        ctxM.lineTo(p2.x + Math.cos(a)*r, p2.y + Math.sin(a)*r);
+                        ctxM.stroke();
+                    }
+                    const gr = ctxM.createRadialGradient(p2.x, p2.y, 0, p2.x, p2.y, size*2);
+                    gr.addColorStop(0, State.color); gr.addColorStop(1, 'transparent');
+                    ctxM.fillStyle = gr;
+                    ctxM.beginPath(); ctxM.arc(p2.x, p2.y, size*2, 0, Math.PI*2); ctxM.fill();
+                } else if (state === 'SPIRAL') {
+                    ctxM.lineWidth = size * 0.3;
+                    ctxM.shadowBlur = size * glow;
+                    ctxM.beginPath();
+                    for(let i=0; i<100; i++) {
+                        const a = i * 0.15;
+                        const r = i * (size * 0.05);
+                        const px = p2.x + Math.cos(a)*r;
+                        const py = p2.y + Math.sin(a)*r;
+                        if(i===0) ctxM.moveTo(px, py); else ctxM.lineTo(px, py);
+                    }
+                    ctxM.stroke();
+                }
+            });
+            ctxM.shadowBlur = 0;
+            ctxM.globalCompositeOperation = 'source-over';
+        }
+
+        function renderHUD(pt, state, pt2 = null) {
+            ctxH.clearRect(0, 0, canvasH.width, canvasH.height);
+            const { size } = State.params;
+
+            if (state === 'ERASE') {
+                ctxH.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+                ctxH.lineWidth = 2;
+                ctxH.setLineDash([8, 8]);
+                ctxH.beginPath(); ctxH.arc(pt.x, pt.y, size * 4, 0, Math.PI*2); ctxH.stroke();
+                ctxH.setLineDash([]);
+                ctxH.fillStyle = 'rgba(244, 63, 94, 0.05)';
+                ctxH.fill();
+            } else if (state === 'RECT' && State.shapeStart) {
+                ctxH.strokeStyle = State.color + '66';
+                ctxH.lineWidth = 2;
+                ctxH.strokeRect(State.shapeStart.x, State.shapeStart.y, pt.x - State.shapeStart.x, pt.y - State.shapeStart.y);
+            } else if (state === 'CIRCLE' && State.shapeStart) {
+                ctxH.strokeStyle = State.color + '66';
+                ctxH.lineWidth = 2;
+                ctxH.beginPath(); ctxH.arc(State.shapeStart.x, State.shapeStart.y, dist(State.shapeStart, pt), 0, Math.PI*2); ctxH.stroke();
+            } else if (state === 'LINE' && State.shapeStart) {
+                ctxH.strokeStyle = State.color + '88';
+                ctxH.lineWidth = 2;
+                ctxH.setLineDash([5, 5]);
+                ctxH.beginPath(); ctxH.moveTo(State.shapeStart.x, State.shapeStart.y); ctxH.lineTo(pt.x, pt.y); ctxH.stroke();
+                ctxH.setLineDash([]);
+                [State.shapeStart, pt].forEach(p => {
+                    ctxH.fillStyle = State.color;
+                    ctxH.beginPath(); ctxH.arc(p.x, p.y, 5, 0, Math.PI*2); ctxH.fill();
+                });
+            } else {
+                ctxH.strokeStyle = state === 'IDLE' ? 'rgba(0,0,0,0.2)' : State.color;
+                ctxH.lineWidth = 2;
+                ctxH.shadowColor = state === 'IDLE' ? 'transparent' : State.color;
+                ctxH.shadowBlur = state === 'IDLE' ? 0 : 5;
+                
+                ctxH.beginPath(); ctxH.arc(pt.x, pt.y, state==='DRAW'? 6 : 12, 0, Math.PI*2); ctxH.stroke();
+                if(state === 'IDLE') {
+                    ctxH.fillStyle = 'rgba(0,0,0,0.4)';
+                    ctxH.beginPath(); ctxH.arc(pt.x, pt.y, 2, 0, Math.PI*2); ctxH.fill();
+                }
+                ctxH.shadowBlur = 0;
+            }
+        }
+
+        // --- MOUSE/TOUCH FALLBACK LOGIC ---
+        function handleInputStart(x, y) {
+            State.touchActive = true;
+            document.getElementById('center-hud').style.opacity = '0';
+            highlightGesture('DRAW');
+            const pt = { x, y };
+            State.prevPos = { ...pt };
+            State.shapeStart = { ...pt };
+            if (['DRAW', 'SPRAY', 'SPIRAL'].includes(State.activeTool)) {
+                renderBrush(pt, pt, State.activeTool);
+            }
+        }
+        function handleInputMove(x, y) {
+            if(!State.touchActive) return;
+            const pt = { x, y };
+            renderHUD(pt, State.activeTool);
+            if (['DRAW', 'SPRAY', 'SPIRAL'].includes(State.activeTool)) {
+                renderBrush(State.prevPos, pt, State.activeTool);
+                State.prevPos = { ...pt };
+            } else if (State.activeTool === 'STAMP' && stampReady) {
+                renderBrush(null, pt, 'STAMP');
+                stampReady = false;
+                setTimeout(() => stampReady = true, 500);
+            }
+        }
+        function handleInputEnd(x, y) {
+            if(!State.touchActive) return;
+            const pt = { x, y };
+            if (['RECT', 'CIRCLE', 'LINE'].includes(State.activeTool) && State.shapeStart) {
+                renderBrush(State.shapeStart, pt, State.activeTool);
+            }
+            State.touchActive = false;
+            State.prevPos = null;
+            State.shapeStart = null;
+            ctxH.clearRect(0, 0, canvasH.width, canvasH.height);
+        }
+
+        canvasM.addEventListener('mousedown', (e) => handleInputStart(e.clientX, e.clientY));
+        canvasM.addEventListener('mousemove', (e) => handleInputMove(e.clientX, e.clientY));
+        canvasM.addEventListener('mouseup', (e) => handleInputEnd(e.clientX, e.clientY));
+        canvasM.addEventListener('mouseleave', (e) => handleInputEnd(e.clientX, e.clientY));
+
+        canvasM.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleInputStart(touch.clientX, touch.clientY);
+        }, {passive: false});
+        canvasM.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleInputMove(touch.clientX, touch.clientY);
+        }, {passive: false});
+        canvasM.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                handleInputEnd(touch.clientX, touch.clientY);
+            } else {
+                handleInputEnd(State.prevPos?.x || 0, State.prevPos?.y || 0);
+            }
+        });
+
+        // --- GESTURE CLASSIFIER ---
+        function classifyHand(lm) {
+            const t = (i) => mapLandmark(lm[i]);
+            const d = (i, j) => dist(t(i), t(j));
+            const wrist = t(0);
+            const ext = (tip, pip) => dist(t(tip), wrist) > dist(t(pip), wrist) * 1.2;
+            
+            const T = dist(t(4), t(17)) > dist(t(3), t(17)) * 1.1; 
+            const I = ext(8, 6);
+            const M = ext(12, 10);
+            const R = ext(16, 14);
+            const Pk = ext(20, 18);
+            const pinch = d(8, 4) < (canvasH.width * 0.04);
+
+            if (T && I && M && R && Pk && !pinch) return 'ERASE';
+            if (pinch) return 'DRAW';
+            return 'IDLE';
+        }
+
+        let stampReady = true;
+
+        function processFrame(result) {
+            if (State.touchActive) return; 
+
+            if (!result.landmarks || result.landmarks.length === 0) {
+                if (State.activeGesture !== 'NONE') {
+                    State.activeGesture = 'NONE';
+                    highlightGesture('NONE');
+                    ctxH.clearRect(0, 0, canvasH.width, canvasH.height);
+                    State.prevPos = null;
+                    State.shapeStart = null;
+                    State.wasPinching = false;
+                    State.smoothedPos1 = null;
+                }
+                return;
+            }
+
+            document.getElementById('center-hud').style.opacity = '0';
+            const hands = result.landmarks;
+            const lm = hands[0];
+            const gesture = classifyHand(lm);
+            
+            const pt_raw = mapLandmark(lm[8]);
+            const pt = smoothPoint(pt_raw, 'smoothedPos1');
+
+            if (gesture !== State.activeGesture) {
+                highlightGesture(gesture);
+                State.activeGesture = gesture;
+            }
+
+            if (gesture === 'ERASE') {
+                renderHUD(pt, 'ERASE');
+                renderBrush(State.prevPos, pt, 'ERASE');
+                State.prevPos = { ...pt };
+                State.wasPinching = false;
+                State.shapeStart = null;
+                return;
+            }
+
+            const isPinching = gesture === 'DRAW';
+
+            if (isPinching && !State.wasPinching) {
+                State.shapeStart = { ...pt };
+                State.prevPos = { ...pt };
+            }
+
+            if (isPinching) {
+                const tool = State.activeTool;
+                renderHUD(pt, tool);
+                
+                if (['DRAW', 'SPRAY', 'SPIRAL'].includes(tool)) {
+                    renderBrush(State.prevPos, pt, tool);
+                    State.prevPos = { ...pt };
+                } else if (tool === 'STAMP') {
+                    if (stampReady) {
+                        renderBrush(null, pt, 'STAMP');
+                        stampReady = false;
+                        setTimeout(() => stampReady = true, 500);
+                    }
+                }
+            } else {
+                renderHUD(pt, 'IDLE');
+                
+                if (State.wasPinching) {
+                    const tool = State.activeTool;
+                    if (['RECT', 'CIRCLE', 'LINE'].includes(tool) && State.shapeStart) {
+                        renderBrush(State.shapeStart, pt, tool);
+                    }
+                    State.shapeStart = null;
+                    State.prevPos = null;
+                }
+            }
+
+            State.wasPinching = isPinching;
+        }
+
+        // --- MEDIAPIPE INITIALIZATION ---
+        const loadText = document.getElementById('load-text');
+        const loadBar = document.getElementById('load-bar');
+        
+        async function initEngine() {
+            try {
+                loadBar.style.width = '20%'; loadText.innerText = "Loading Optical Vision Modules...";
+                const { HandLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs');
+                
+                loadBar.style.width = '50%'; loadText.innerText = "Initializing Neural Weights...";
+                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                
+                const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    numHands: 1, // Restricted to 1 hand to keep light mode snappy and focused
+                    minHandDetectionConfidence: 0.7,
+                    minHandPresenceConfidence: 0.7,
+                    minTrackingConfidence: 0.7
+                });
+
+                loadBar.style.width = '80%'; loadText.innerText = "Requesting Camera Access...";
+                const video = document.getElementById('webcam');
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
+                video.srcObject = stream;
+                
+                video.addEventListener('loadeddata', () => {
+                    loadBar.style.width = '100%'; loadText.innerText = "Engine Ready";
+                    setTimeout(() => {
+                        document.getElementById('loading-screen').style.opacity = '0';
+                        setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 700);
+                        
+                        let lastVideoTime = -1;
+                        function renderLoop() {
+                            if (video.currentTime !== lastVideoTime && !State.touchActive) {
+                                lastVideoTime = video.currentTime;
+                                const results = handLandmarker.detectForVideo(video, performance.now());
+                                processFrame(results);
+                            }
+                            requestAnimationFrame(renderLoop);
+                        }
+                        renderLoop();
+                    }, 500);
+                });
+            } catch (error) {
+                console.error(error);
+                loadText.innerText = "Optical Tracking Unavailable - Touch Mode Activated";
+                loadText.classList.replace('text-slate-500', 'text-[#b14bf4]');
+                document.getElementById('camera-pip').style.display = 'none';
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.opacity = '0';
+                    setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 700);
+                }, 2000);
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', initEngine);
+
+        // --- GEMINI AI INTEGRATION ---
+        async function fetchWithRetry(url, options, retries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return await res.json();
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+        }
+
+        window.generateAIPalette = async () => {
+            const btn = document.getElementById('btn-palette');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Generating...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${State.apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: "Generate a highly creative, ethereal theme (e.g., 'Celestial Ribbon', 'Dawn Chorus') and a cohesive 8-color palette of hex codes. IMPORTANT: These colors will be drawn on a WHITE canvas using a 'Multiply' blend mode. Ensure the colors are vivid, rich jewel tones, deep pinks, blues, and purples that will show up beautifully on white. Avoid overly pale pastels." }] }],
+                    systemInstruction: { parts: [{ text: "You are an expert color theorist for elegant, light-mode generative digital art." }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                theme: { type: "STRING" },
+                                colors: { type: "ARRAY", items: { type: "STRING" } }
+                            }
+                        }
+                    }
+                };
+
+                const result = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                
+                const safeColors = data.colors.slice(0, 8);
+                while(safeColors.length < 8) safeColors.push('#1e293b');
+                
+                buildPaletteUI(safeColors, data.theme.toUpperCase());
+                showToast(`Palette: ${data.theme}`, 'palette');
+            } catch (err) {
+                console.error(err);
+                showToast("AI Generation Failed", 'alert-circle');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        };
+
+        window.analyzeArtwork = async () => {
+            const btn = document.getElementById('btn-critic');
+            const out = document.getElementById('critic-output');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Analyzing...`;
+            btn.disabled = true;
+            out.innerHTML = `<span class="text-[#b14bf4] not-italic font-space text-xs animate-pulse">Consulting Neural Critic...</span>`;
+            lucide.createIcons();
+
+            try {
+                const t = document.createElement('canvas');
+                t.width = canvasM.width; t.height = canvasM.height;
+                const tc = t.getContext('2d');
+                tc.fillStyle = '#ffffff'; tc.fillRect(0, 0, t.width, t.height); tc.drawImage(canvasM, 0, 0);
+                const b64 = t.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${State.apiKey}`;
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: "Analyze this light-mode generative watercolor/ink artwork. Provide a pretentious, evocative gallery title and a short 2-sentence poetic critique of its form, ethereal energy, and colors against the white canvas." },
+                            { inlineData: { mimeType: "image/jpeg", data: b64 } }
+                        ]
+                    }],
+                    systemInstruction: { parts: [{ text: "You are an eccentric, pretentious, but highly articulate AI art critic." }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                title: { type: "STRING" },
+                                critique: { type: "STRING" }
+                            }
+                        }
+                    }
+                };
+
+                const result = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                
+                out.innerHTML = `
+                    <h3 class="text-slate-800 font-bold text-lg mb-2 leading-tight">"${data.title}"</h3>
+                    <div class="w-10 h-px bg-[#b14bf4]/50 mb-3 mx-auto shrink-0"></div>
+                    <p class="text-slate-600 text-xs md:text-sm leading-relaxed">${data.critique}</p>
+                `;
+                showToast("Critique Complete", 'check-circle');
+            } catch (err) {
+                console.error(err);
+                out.innerHTML = `<span class="text-rose-500 not-italic font-space text-xs">Failed to reach the critic.</span>`;
+                showToast("Analysis Failed", 'alert-circle');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        };
+
+    </script>
+</body>
+</html>
