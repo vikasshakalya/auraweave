@@ -11,7 +11,7 @@
 *A spatial computing generative art studio that runs entirely in your browser.*<br>
 *Brought to you by **Shakalya International**.*
 
-[Live Demo] | [Documentation] | [Report Bug]
+[Live Demo](https://vikasshakalya.github.io/auraweave/) | [Documentation](https://github.com/vikasshakalya/auraweave#readme) | [Report Bug](https://github.com/vikasshakalya/auraweave/issues/new)
 
 </div>
 
@@ -64,4 +64,5 @@ Because AuraWeave utilizes a Zero-Build architecture, getting started takes less
 
 1. **Clone the repo**
    ```bash
-   git clone [https://github.com/YourName/AuraWeave-Pro.git](https://github.com/YourName/AuraWeave-Pro.git)
+   git clone https://github.com/vikasshakalya/auraweave.git
+   ```
